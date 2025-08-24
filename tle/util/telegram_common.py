@@ -33,8 +33,32 @@ def fmt_codeforces(text: str, color: str | None = None) -> str:
     Purely cosmetic helper that tries to mimic embed colour coding.
     """
     # Square emoji to act as color indicator
-    square = "\U0001F7E8"  # default yellow square
-    return f"{square} <b>{html.escape(text)}</b>" if text else text
+    if color is None:
+        color = _ALERT_AMBER
+    if color == _ALERT_AMBER:
+        square = "\U0001F7E8"  # default yellow square
+    elif color == _SUCCESS_GREEN:
+        square = "\U0001F7E9"  # default green square
+    else:
+        logger.warning("Unknown color: %s", color)
+        square = "\U0001F7E8"  # default yellow square
+        
+    return f"{square} <b>{text}</b>" if text else text
+
+
+# ------------------------------------------------------------------
+# Misc helpers
+# ------------------------------------------------------------------
+
+
+def hyperlink(label: str, url: str) -> str:
+    """Return Telegram HTML hyperlink."""
+    return f"<a href=\"{html.escape(url)}\">{html.escape(label)}</a>"
+
+
+def wrap_placeholder(text: str) -> str:
+    """Wrap a placeholder with escaped angle brackets, e.g., '<handle>' -> '&lt;handle&gt;'."""
+    return f"&lt;{html.escape(text)}&gt;"
 
 
 def embed_neutral(desc: str) -> str:

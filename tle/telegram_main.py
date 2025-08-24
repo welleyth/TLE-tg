@@ -2,11 +2,10 @@ import asyncio
 import logging
 import os
 
-from aiogram import Bot, Dispatcher, F, types
+from aiogram import Bot, Dispatcher, types
 from aiogram.enums import ParseMode
 from aiogram.client.default import DefaultBotProperties
 from aiogram.fsm.storage.memory import MemoryStorage
-from aiogram.filters.command import CommandStart, Command
 from aiogram.utils.chat_action import ChatActionMiddleware
 from aiogram.client.session.aiohttp import AiohttpSession
 
@@ -50,40 +49,38 @@ async def main():
     bot = Bot(token, session=session, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
     dp = Dispatcher(storage=MemoryStorage())
 
+    from tle.tg.commands import get_router
+    dp.include_router(get_router())
+
     # Middlewares
     dp.message.middleware(ChatActionMiddleware())
 
-    # --- Register handlers ---
-    dp.message.register(ping_handler, Command("ping"))
+    # ---------------- Register bot commands globally -----------------
 
-    # /user <handle> – basic Codeforces user info
+    async def set_bot_commands(bot: Bot):
+        commands = [
+            types.BotCommand(command="ping", description="Health check"),
+            types.BotCommand(command="user", description="Codeforces user info"),
+            types.BotCommand(command="handle", description="Link or get Codeforces handle"),
+        ]
+        await bot.set_my_commands(commands, scope=types.BotCommandScopeAllGroupChats())
 
-    async def user_info_handler(message: types.Message):
-        parts = message.text.split(maxsplit=1)
-        if len(parts) == 1:
-            await message.answer("Usage: /user <handle>")
-            return
-        handle = parts[1].strip()
-        try:
-            (user,) = await cf_common.cf.user.info(handles=[handle])  # type: ignore[attr-defined]
-        except Exception as e:  # noqa: BLE001
-            from tle.util.telegram_common import embed_alert, safe_send
-
-            await safe_send(message, embed_alert(f"Error: {e}"))
-            return
-
-        from tle.util.telegram_common import embed_success
-
-        desc = f"<a href='{user.url}'>{user.handle}</a>\nRating: {user.rating if user.rating else 'Unrated'}"
-        await message.answer(embed_success(desc), disable_web_page_preview=True)
-
-    dp.message.register(user_info_handler, Command("user"))
+    # command handlers are now in tle.tg.commands
 
     # init Codeforces cache/db etc. similar to Discord bot on_ready
     await cf_common.initialize(False)
 
     # Start polling
     try:
+        await set_bot_commands(bot)
+
+        # Listener: log when bot status changes in supergroups
+        @dp.chat_member()
+        async def chat_member_update(event: types.ChatMemberUpdated):
+            old, new = event.old_chat_member, event.new_chat_member
+            if old.status != new.status:
+                logging.info("ChatMember update in %s: %s -> %s", event.chat.title, old.status, new.status)
+
         await dp.start_polling(bot)
     finally:
         await session.close()
