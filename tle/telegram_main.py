@@ -52,6 +52,10 @@ async def main():
     from tle.tg.commands import get_router
     dp.include_router(get_router())
 
+    # standings router (admin command)
+    from tle.tg.standings import get_router as standings_router, register_listener as standings_listener
+    dp.include_router(standings_router())
+
     # Middlewares
     dp.message.middleware(ChatActionMiddleware())
 
@@ -74,6 +78,7 @@ async def main():
     # Start polling
     try:
         await set_bot_commands(bot)
+        standings_listener(bot)
 
         # Listener: log when bot status changes in supergroups
         @dp.chat_member()
