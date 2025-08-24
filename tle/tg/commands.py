@@ -155,3 +155,54 @@ async def handle_combined(message: types.Message):
 
 def get_router() -> Router:
     return router
+
+# ---------------- Gimme (recommend problem) ----------------
+
+
+@router.message(Command("gimme"))
+async def gimme_handler(message: types.Message):
+    """Recommend a Codeforces problem similar to Discord ;gimme."""
+    args = message.text.split()[1:]  # skip command
+
+    # Determine invoking user's handle
+    chat_id = message.chat.id
+    user_id = message.from_user.id
+    cf_user = handle_logic.fetch_handle(user_id, chat_id)
+    if not cf_user:
+        await message.answer(embed_alert("You need to /handle set first."))
+        return
+
+    rating = round(cf_user.effective_rating, -2)
+
+    tags = cf_common.parse_tags(args, prefix="+")
+    bantags = cf_common.parse_tags(args, prefix="~")
+    rating = cf_common.parse_rating(args, rating)
+
+    submissions = await cf.user.status(handle=cf_user.handle)
+    solved = {sub.problem.name for sub in submissions if sub.verdict == "OK"}
+
+    problems = [
+        prob
+        for prob in cf_common.cache2.problem_cache.problems
+        if prob.rating == rating
+        and prob.name not in solved
+        and not cf_common.is_contest_writer(prob.contestId, cf_user.handle)
+        and prob.matches_all_tags(tags)
+        and not prob.matches_any_tag(bantags)
+    ]
+
+    if not problems:
+        await message.answer(embed_alert("No suitable problems found."))
+        return
+
+    problems.sort(
+        key=lambda p: cf_common.cache2.contest_cache.get_contest(p.contestId).startTimeSeconds
+    )
+
+    choice = max(random.randrange(len(problems)) for _ in range(2))
+    problem = problems[choice]
+
+    desc = (
+        f"{hyperlink(problem.name, problem.url)}\nRating: {problem.rating}"
+    )
+    await message.answer(embed_success(desc), parse_mode=ParseMode.HTML, disable_web_page_preview=True)

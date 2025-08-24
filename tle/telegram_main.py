@@ -62,6 +62,7 @@ async def main():
             types.BotCommand(command="ping", description="Health check"),
             types.BotCommand(command="user", description="Codeforces user info"),
             types.BotCommand(command="handle", description="Link or get Codeforces handle"),
+            types.BotCommand(command="gimme", description="Recommend a Codeforces problem"),
         ]
         await bot.set_my_commands(commands, scope=types.BotCommandScopeAllGroupChats())
 
