@@ -64,6 +64,18 @@ def strtobool(value: str) -> bool:
 
 
 def main():
+    # Platform switch: if BOT_PLATFORM=telegram, delegate and exit
+    platform = environ.get("BOT_PLATFORM", "discord").lower()
+    if platform == "telegram":
+        from tle.telegram_main import main as telegram_main  # local import
+        import asyncio, inspect
+
+        if inspect.iscoroutinefunction(telegram_main):
+            asyncio.run(telegram_main())
+        else:
+            telegram_main()
+        return
+
     parser = argparse.ArgumentParser()
     parser.add_argument('--nodb', action='store_true')
     args = parser.parse_args()

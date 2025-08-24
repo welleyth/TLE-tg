@@ -4,8 +4,8 @@ version = "0.1.0"
 requires-python = ">= 3.9"
 dependencies = [
   # Discord bot core
-  "discord.py == 1.7.3",
-  "aiohttp < 3.8",
+  "discord.py == 2.3.2",
+  "aiohttp >= 3.9, < 3.13",
   "aiocache",
   # Data & plotting
   "numpy",
@@ -14,6 +14,7 @@ dependencies = [
   "seaborn",
   # Images
   "pillow",
+  "aiogram==3.22.0",
 ]
 
 [project.optional-dependencies]

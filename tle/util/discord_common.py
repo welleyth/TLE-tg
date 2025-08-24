@@ -16,7 +16,9 @@ _SUCCESS_GREEN = 0x28A745
 _ALERT_AMBER = 0xFFBF00
 
 
-def embed_neutral(desc, color=discord.Embed.Empty):
+def embed_neutral(desc, color=None):
+    if color is None:
+        return discord.Embed(description=str(desc))
     return discord.Embed(description=str(desc), color=color)
 
 
